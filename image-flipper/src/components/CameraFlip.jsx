@@ -80,7 +80,7 @@ const CameraApp = () => {
         <div className="flex flex-wrap justify-center space-x-2 mt-4">
           <Button label="Start" onClick={startCamera} />
           <Button label="Capture" onClick={capturePhoto} />
-          <Button label="Flip" onClick={flipImag} />         
+          <Button label="Flip" onClick={flipImage} />         
           <Button label="Stop" onClick={stopCamera} />
         </div>
       </div>
