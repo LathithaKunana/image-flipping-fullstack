@@ -85,8 +85,9 @@ const CameraApp = () => {
         </div>
       </div>
       {uploadedImageUrl && (
-        <motion.div
-          className="flex flex-col items-center space-y-6 mt-4"
+        <div className="flex flex-col items-center mt-2 w-full max-w-xl p-6 bg-white rounded-lg shadow-lg">
+          <motion.div
+          className="flex flex-col items-center space-y- mt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -97,9 +98,11 @@ const CameraApp = () => {
           <img
             src={uploadedImageUrl}
             alt="Uploaded"
-            className="w-4/5 max-w-xl h-auto rounded-lg shadow-md"
+            className="w-full max-w-xl h-auto rounded-lg shadow-md"
           />
-        </motion.div>
+        </motion.div>  
+        </div>
+        
       )}
     </div>
   );
