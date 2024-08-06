@@ -65,7 +65,7 @@ const CameraApp = () => {
   };
 
   return (
-    <div className="flex flex-col items-center p-4 justify-center min-h-screen bg-gray-100">
+    <div className="flex flex-col items-center p-4 justify-center min-h-screen bg-neutral-100">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Camera App</h1>
       <div className="flex flex-col items-center w-full max-w-xl p-6 bg-white rounded-lg shadow-lg">
         <motion.video
@@ -77,7 +77,7 @@ const CameraApp = () => {
           transition={{ duration: 0.5 }}
         />
         <canvas ref={canvasRef} width="400" height="300" className="hidden" />
-        <div className="flex flex-wrap justify-center space-x-2 mt-4">
+        <div className="flex justify-center space-x-2 mt-4">
           <Button label="Start" onClick={startCamera} />
           <Button label="Capture" onClick={capturePhoto} />
           <Button label="Flip" onClick={flipImage} />         
