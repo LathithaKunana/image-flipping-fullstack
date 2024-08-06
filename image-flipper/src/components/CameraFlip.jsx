@@ -86,7 +86,7 @@ const CameraApp = () => {
       </div>
       {uploadedImageUrl && (
         <motion.div
-          className="mt-4"
+          className="flex flex-col items-center space-y-6 mt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -97,7 +97,7 @@ const CameraApp = () => {
           <img
             src={uploadedImageUrl}
             alt="Uploaded"
-            className="w-full max-w-xl h-auto rounded-lg shadow-md"
+            className="w-4/5 max-w-xl h-auto rounded-lg shadow-md"
           />
         </motion.div>
       )}
