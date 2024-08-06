@@ -1,4 +1,3 @@
-//oh0uslyh
 import React, { useRef, useState } from 'react';
 import axios from 'axios';
 import { Switch } from '@headlessui/react';
@@ -25,15 +24,17 @@ const CameraApp = () => {
   };
 
   const capturePhoto = async () => {
-    const context = canvasRef.current.getContext('2d');
-    context.drawImage(
-      videoRef.current,
-      0,
-      0,
-      canvasRef.current.width,
-      canvasRef.current.height
-    );
-    const imageData = canvasRef.current.toDataURL('image/png');
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // Set the canvas dimensions to match the video dimensions
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw the video frame on the canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/png');
     const uploadedUrl = await uploadToCloudinary(imageData);
     setUploadedImageUrl(uploadedUrl);
   };
@@ -75,34 +76,34 @@ const CameraApp = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
+          autoPlay
         />
-        <canvas ref={canvasRef} width="400" height="300" className="hidden" />
+        <canvas ref={canvasRef} className="hidden" />
         <div className="flex justify-center space-x-2 mt-4">
           <Button label="Start" onClick={startCamera} />
           <Button label="Capture" onClick={capturePhoto} />
-          <Button label="Flip" onClick={flipImage} />         
+          <Button label="Flip" onClick={flipImage} />
           <Button label="Stop" onClick={stopCamera} />
         </div>
       </div>
       {uploadedImageUrl && (
         <div className="flex flex-col items-center mt-2 w-full max-w-xl p-6 bg-white rounded-lg shadow-lg">
           <motion.div
-          className="flex flex-col items-center space-y- mt-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            Uploaded Image:
-          </h2>
-          <img
-            src={uploadedImageUrl}
-            alt="Uploaded"
-            className="w-full max-w-xl h-auto rounded-lg shadow-md"
-          />
-        </motion.div>  
+            className="flex flex-col items-center space-y- mt-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+              Uploaded Image:
+            </h2>
+            <img
+              src={uploadedImageUrl}
+              alt="Uploaded"
+              className="w-full max-w-xl h-auto rounded-lg shadow-md"
+            />
+          </motion.div>
         </div>
-        
       )}
     </div>
   );
@@ -120,5 +121,3 @@ const Button = ({ label, onClick }) => (
 );
 
 export default CameraApp;
-
-
