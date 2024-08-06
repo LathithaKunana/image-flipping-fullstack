@@ -65,7 +65,7 @@ const CameraApp = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex flex-col items-center p-4 justify-center min-h-screen bg-gray-100">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Camera App</h1>
       <div className="flex flex-col items-center w-full max-w-xl p-6 bg-white rounded-lg shadow-lg">
         <motion.video
@@ -86,7 +86,7 @@ const CameraApp = () => {
       </div>
       {uploadedImageUrl && (
         <motion.div
-          className="mt-8"
+          className="mt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
