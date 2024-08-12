@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.1.2",
+    "@pqina/pintura": "^8.83.0",
+    "@pqina/react-pintura": "^9.0.3",
     "axios": "^1.7.3",
     "cloudinary": "^2.4.0",
     "framer-motion": "^11.3.21",
