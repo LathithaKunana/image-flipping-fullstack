@@ -12,11 +12,12 @@ const CameraApp = () => {
   const [flippedImage, setFlippedImage] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
   const [editedImage, setEditedImage] = useState(null);
+  const [cameraMode, setCameraMode] = useState('user'); // 'user' for front camera, 'environment' for back camera
 
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: { facingMode: cameraMode },
       });
       setStream(mediaStream);
       videoRef.current.srcObject = mediaStream;
@@ -71,6 +72,14 @@ const CameraApp = () => {
     }
   };
 
+  const toggleCamera = () => {
+    setCameraMode((prevMode) =>
+      prevMode === 'user' ? 'environment' : 'user'
+    );
+    stopCamera();
+    startCamera();
+  };
+
   const downloadImage = () => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -116,6 +125,7 @@ const CameraApp = () => {
           <Button label="Start" onClick={startCamera} />
           <Button label="Capture" onClick={capturePhoto} />
           <Button label="Stop" onClick={stopCamera} />
+          <Button label="Rotate Camera" onClick={toggleCamera} />
         </div>
       </div>
       {originalImage && flippedImage && (
