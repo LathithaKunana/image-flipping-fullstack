@@ -15,9 +15,13 @@
     "@pqina/react-pintura": "^9.0.3",
     "axios": "^1.7.3",
     "cloudinary": "^2.4.0",
+    "fabric": "^5.4.0",
     "framer-motion": "^11.3.21",
+    "konva": "^9.3.14",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "use-image": "^1.1.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
