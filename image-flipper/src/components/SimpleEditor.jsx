@@ -1,3 +1,4 @@
+//Ignore
 import React, { useState } from 'react';
 import { PinturaEditor } from '@pqina/react-pintura';
 import '@pqina/pintura/pintura.css';
