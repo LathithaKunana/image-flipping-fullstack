@@ -30,7 +30,7 @@ const CameraApp = () => {
     "Folder 6": { images: [], thumbnail: null },
   });
   const [isFinalized, setIsFinalized] = useState(false);
-
+  const [selectedThumbnails, setSelectedThumbnails] = useState({});
   // Functions for Camera and Image Handling
   // ... (existing functions here) ...
 
@@ -71,6 +71,22 @@ const CameraApp = () => {
       setFlippedImageElement(img);
       setShowEditor(true);
     };
+    selectRandomImages()
+  };
+
+   // New function to select random images
+   const selectRandomImages = () => {
+    const updatedFolders = { ...folders };
+
+    Object.keys(updatedFolders).forEach((folderName) => {
+      const folderImages = updatedFolders[folderName].images;
+      if (folderImages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * folderImages.length);
+        updatedFolders[folderName].thumbnail = folderImages[randomIndex]; // Select random image
+      }
+    });
+
+    setFolders(updatedFolders);
   };
 
   const stopCamera = () => {
@@ -197,7 +213,7 @@ const CameraApp = () => {
             />
             <canvas ref={canvasRef} width="400" height="300" className="hidden" />
             <div className="flex flex-wrap justify-center gap-2 mt-4">
-              <Button label="Start" icon={<FaPlay/>} onClick={startCamera} />
+              <Button label="Start" icon={<FaPlay />} onClick={startCamera} />
               <Button label="Capture" icon={<FaCamera />} onClick={capturePhoto} />
               <Button label="Stop" icon={<FaStop />} onClick={stopCamera} />
               <Button label="Rotate" icon={<FaSyncAlt />} onClick={toggleCamera} />
@@ -266,20 +282,21 @@ const CameraApp = () => {
           )}
         </div>
       </div>
-      {isFinalized && <FinalSidebar folders={folders} />}
+      {isFinalized && <FinalSidebar folders={folders} />} {/* No changes needed here */}
     </div>
   );
 };
 
-// Updated reusable button component for better responsiveness
+// Updated reusable button component
 const Button = ({ label, icon, onClick }) => (
   <motion.button
-    className="bg-indigo-500 text-white font-bold py-2 px-3 sm:px-4 rounded flex flex-col sm:flex-row items-center justify-center text-xs sm:text-sm"
     onClick={onClick}
+    className="flex items-center bg-indigo-500 text-white font-bold py-2 px-4 rounded hover:bg-indigo-600 transition-colors duration-200 ease-in-out shadow-lg"
+    whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
   >
-    <span className="mb-1 sm:mb-0 sm:mr-2">{icon}</span>
-    <span className="text-[10px] sm:text-xs md:text-sm">{label}</span>
+    {icon}
+    <span className="hidden sm:inline-block ml-2">{label}</span>
   </motion.button>
 );
 

@@ -6,7 +6,8 @@ import axios from 'axios';
 
 const Sidebar = ({ folders, setFolders, setIsFinalized }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [loadingStates, setLoadingStates] = useState({}); // Use an object to track loading state for each folder
+  const [loadingStates, setLoadingStates] = useState({}); // Track loading state for each folder
+  const [initialThumbnails, setInitialThumbnails] = useState({}); // Separate state for initial thumbnails
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -14,6 +15,8 @@ const Sidebar = ({ folders, setFolders, setIsFinalized }) => {
     setLoadingStates((prevState) => ({ ...prevState, [folderName]: true })); // Start loading for the specific folder
 
     const updatedFolder = [...folders[folderName].images];
+    const updatedInitialThumbnails = { ...initialThumbnails };
+
     // Upload files to Cloudinary and get URLs
     for (let file of files) {
       const formData = new FormData();
@@ -22,7 +25,15 @@ const Sidebar = ({ folders, setFolders, setIsFinalized }) => {
 
       try {
         const response = await axios.post('https://api.cloudinary.com/v1_1/dxhxijoo4/upload', formData);
-        updatedFolder.push(response.data.secure_url);
+        const uploadedUrl = response.data.secure_url;
+
+        // Update folder images
+        updatedFolder.push(uploadedUrl);
+
+        // Set initial thumbnail only if it hasn't been set before
+        if (!updatedInitialThumbnails[folderName]) {
+          updatedInitialThumbnails[folderName] = uploadedUrl;
+        }
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);
       }
@@ -33,9 +44,10 @@ const Sidebar = ({ folders, setFolders, setIsFinalized }) => {
       [folderName]: {
         ...prevState[folderName],
         images: updatedFolder,
-        thumbnail: updatedFolder.length ? updatedFolder[0] : null,
+        thumbnail: updatedFolder.length ? updatedFolder[0] : null, // Update thumbnail for FinalSidebar
       },
     }));
+    setInitialThumbnails(updatedInitialThumbnails); // Update initial thumbnails
     setLoadingStates((prevState) => ({ ...prevState, [folderName]: false })); // Stop loading for the specific folder
   };
 
@@ -137,11 +149,11 @@ const Sidebar = ({ folders, setFolders, setIsFinalized }) => {
       </div>
       {/* Circular containers visible when sidebar is collapsed */}
       <div className={`h-screen flex flex-col items-center w-16 p-2 ${isOpen ? 'hidden' : 'flex'} overflow-y-auto`}>
-        {Object.keys(folders).map((folderName) => 
-          folders[folderName].thumbnail && (
+        {Object.keys(folders).map((folderName) =>
+          initialThumbnails[folderName] && (
             <div key={folderName} className="mb-4 w-12 h-12 rounded-full overflow-hidden border-2 border-gray-500 bg-gray-800">
               <img
-                src={folders[folderName].thumbnail}
+                src={initialThumbnails[folderName]} // Use initial thumbnail
                 alt={`Thumbnail of ${folderName}`}
                 className="w-full h-full object-cover"
               />
