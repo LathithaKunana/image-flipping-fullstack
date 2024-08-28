@@ -1,11 +1,10 @@
-// CameraApp.jsx
-
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
 import { FaCamera, FaStop, FaSyncAlt, FaDownload, FaUpload, FaPlay } from "react-icons/fa";
 import Sidebar from "./SideBar";
 import FinalSidebar from "./FinalSidebar";
+// img1.crossOrigin = "anonymous";
 
 const CameraApp = () => {
   const videoRef = useRef(null);
@@ -30,10 +29,9 @@ const CameraApp = () => {
     "Folder 6": { images: [], thumbnail: null },
   });
   const [isFinalized, setIsFinalized] = useState(false);
-  const [selectedThumbnails, setSelectedThumbnails] = useState({});
-  // Functions for Camera and Image Handling
-  // ... (existing functions here) ...
+  const [initialThumbnails, setInitialThumbnails] = useState({});
 
+  // Functions for Camera and Image Handling
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -71,11 +69,11 @@ const CameraApp = () => {
       setFlippedImageElement(img);
       setShowEditor(true);
     };
-    selectRandomImages()
+    selectRandomImages();
   };
 
-   // New function to select random images
-   const selectRandomImages = () => {
+  // Function to select random images from folders for thumbnails
+  const selectRandomImages = () => {
     const updatedFolders = { ...folders };
 
     Object.keys(updatedFolders).forEach((folderName) => {
@@ -139,42 +137,80 @@ const CameraApp = () => {
   const downloadImage = () => {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
-
+  
     const imgWidth = flippedImageElement.width;
     const imgHeight = flippedImageElement.height;
-
-    canvas.width = imgWidth * 2;
+  
+    canvas.width = imgWidth * 2 + 200;
     canvas.height = imgHeight;
-
+  
     const img1 = new Image();
+    img1.crossOrigin = "anonymous";
+    img1.src = originalImage;
+  
     img1.onload = () => {
-      context.drawImage(img1, 0, 0, imgWidth, imgHeight);
-      context.drawImage(flippedImageElement, imgWidth, 0, imgWidth, imgHeight);
-
-      const overlayNode = overlayRef.current;
-      if (overlayNode) {
-        const absolutePosition = overlayNode.getAbsolutePosition();
-        const scaleX = overlayNode.scaleX();
-        const scaleY = overlayNode.scaleY();
+      context.drawImage(img1, 100, 0, imgWidth, imgHeight);
+      context.drawImage(flippedImageElement, imgWidth + 100, 0, imgWidth, imgHeight);
+  
+      if (overlayRef.current && overlayImageElement) {
+        const absolutePosition = overlayRef.current.getAbsolutePosition();
+        const scaleX = overlayRef.current.scaleX();
+        const scaleY = overlayRef.current.scaleY();
         context.drawImage(
           overlayImageElement,
-          imgWidth + absolutePosition.x,
+          imgWidth + absolutePosition.x + 100,
           absolutePosition.y,
-          overlayNode.width() * scaleX,
-          overlayNode.height() * scaleY
+          overlayRef.current.width() * scaleX,
+          overlayRef.current.height() * scaleY
         );
       }
-
-      const combinedImage = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = combinedImage;
-      link.download = "combined_image.png";
-      link.click();
+  
+      const drawThumbnails = (side) => {
+        return new Promise((resolve) => {
+          let yOffset = 10;
+          const drawNextThumbnail = (index) => {
+            if (index >= Object.keys(folders).length) {
+              resolve();
+              return;
+            }
+            const folderName = Object.keys(folders)[index];
+            const thumbnailSrc = side === "left" 
+              ? initialThumbnails[folderName]  // Use initial thumbnails for left side
+              : folders[folderName].thumbnail; // Use current thumbnails for right side
+            if (thumbnailSrc) {
+              const thumbnailImg = new Image();
+              thumbnailImg.crossOrigin = "anonymous";
+              thumbnailImg.src = thumbnailSrc;
+              thumbnailImg.onload = () => {
+                context.save();
+                context.beginPath();
+                const xPosition = side === "left" ? 50 : canvas.width - 50;
+                context.arc(xPosition, yOffset + 40, 40, 0, Math.PI * 2, true);
+                context.clip();
+                const imgXPosition = side === "left" ? 10 : canvas.width - 90;
+                context.drawImage(thumbnailImg, imgXPosition, yOffset, 80, 80);
+                context.restore();
+                yOffset += 100;
+                drawNextThumbnail(index + 1);
+              };
+            } else {
+              drawNextThumbnail(index + 1);
+            }
+          };
+          drawNextThumbnail(0);
+        });
+      };
+  
+      Promise.all([drawThumbnails("left"), drawThumbnails("right")]).then(() => {
+        const combinedImage = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = combinedImage;
+        link.download = "final_image.png";
+        link.click();
+      });
     };
-
-    img1.src = originalImage;
   };
-
+  
   useEffect(() => {
     if (showEditor && trRef.current && overlayRef.current) {
       trRef.current.nodes([overlayRef.current]);
@@ -199,7 +235,7 @@ const CameraApp = () => {
 
   return (
     <div className="flex flex-col px-14 sm:px-20 sm:flex-row min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200">
-      <Sidebar folders={folders} setFolders={setFolders} setIsFinalized={setIsFinalized} />
+      <Sidebar folders={folders} setFolders={setFolders} setIsFinalized={setIsFinalized} setInitialThumbnails={setInitialThumbnails} />
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col items-center justify-center p-4">
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-4 sm:mb-6 text-gray-800">Camera App</h1>
