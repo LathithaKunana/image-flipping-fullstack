@@ -26,7 +26,6 @@ const CameraApp = () => {
     "Folder 3": { images: [], thumbnail: null },
     "Folder 4": { images: [], thumbnail: null },
     "Folder 5": { images: [], thumbnail: null },
-    "Folder 6": { images: [], thumbnail: null },
   });
   const [isFinalized, setIsFinalized] = useState(false);
   const [initialThumbnails, setInitialThumbnails] = useState({});
@@ -141,7 +140,8 @@ const CameraApp = () => {
     const imgWidth = flippedImageElement.width;
     const imgHeight = flippedImageElement.height;
   
-    canvas.width = imgWidth * 2 + 200;
+    const sidebarWidth = 100; // Width for sidebar on each side
+    canvas.width = imgWidth * 2 + sidebarWidth * 2;
     canvas.height = imgHeight;
   
     const img1 = new Image();
@@ -149,8 +149,8 @@ const CameraApp = () => {
     img1.src = originalImage;
   
     img1.onload = () => {
-      context.drawImage(img1, 100, 0, imgWidth, imgHeight);
-      context.drawImage(flippedImageElement, imgWidth + 100, 0, imgWidth, imgHeight);
+      context.drawImage(img1, sidebarWidth, 0, imgWidth, imgHeight);
+      context.drawImage(flippedImageElement, imgWidth + sidebarWidth, 0, imgWidth, imgHeight);
   
       if (overlayRef.current && overlayImageElement) {
         const absolutePosition = overlayRef.current.getAbsolutePosition();
@@ -158,7 +158,7 @@ const CameraApp = () => {
         const scaleY = overlayRef.current.scaleY();
         context.drawImage(
           overlayImageElement,
-          imgWidth + absolutePosition.x + 100,
+          imgWidth + absolutePosition.x + sidebarWidth,
           absolutePosition.y,
           overlayRef.current.width() * scaleX,
           overlayRef.current.height() * scaleY
@@ -167,16 +167,16 @@ const CameraApp = () => {
   
       const drawThumbnails = (side) => {
         return new Promise((resolve) => {
-          let yOffset = 10;
-          const drawNextThumbnail = (index) => {
-            if (index >= Object.keys(folders).length) {
-              resolve();
-              return;
-            }
-            const folderName = Object.keys(folders)[index];
+          const folderCount = Object.keys(folders).length;
+          const maxContainerSize = Math.min(80, (imgHeight - 20) / folderCount - 10);
+          const containerSize = Math.max(40, maxContainerSize);
+          const ySpacing = (imgHeight - containerSize * folderCount) / (folderCount + 1);
+  
+          Object.keys(folders).forEach((folderName, index) => {
             const thumbnailSrc = side === "left" 
-              ? initialThumbnails[folderName]  // Use initial thumbnails for left side
-              : folders[folderName].thumbnail; // Use current thumbnails for right side
+              ? initialThumbnails[folderName]
+              : folders[folderName].thumbnail;
+            
             if (thumbnailSrc) {
               const thumbnailImg = new Image();
               thumbnailImg.crossOrigin = "anonymous";
@@ -184,20 +184,20 @@ const CameraApp = () => {
               thumbnailImg.onload = () => {
                 context.save();
                 context.beginPath();
-                const xPosition = side === "left" ? 50 : canvas.width - 50;
-                context.arc(xPosition, yOffset + 40, 40, 0, Math.PI * 2, true);
+                const xPosition = side === "left" ? sidebarWidth / 2 : canvas.width - sidebarWidth / 2;
+                const yPosition = ySpacing * (index + 1) + containerSize * index + containerSize / 2;
+                context.arc(xPosition, yPosition, containerSize / 2, 0, Math.PI * 2, true);
                 context.clip();
-                const imgXPosition = side === "left" ? 10 : canvas.width - 90;
-                context.drawImage(thumbnailImg, imgXPosition, yOffset, 80, 80);
+                const imgXPosition = side === "left" ? 0 : canvas.width - sidebarWidth;
+                context.drawImage(thumbnailImg, imgXPosition, yPosition - containerSize / 2, containerSize, containerSize);
                 context.restore();
-                yOffset += 100;
-                drawNextThumbnail(index + 1);
+  
+                if (index === folderCount - 1) resolve();
               };
-            } else {
-              drawNextThumbnail(index + 1);
+            } else if (index === folderCount - 1) {
+              resolve();
             }
-          };
-          drawNextThumbnail(0);
+          });
         });
       };
   
