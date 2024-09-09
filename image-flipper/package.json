@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@adalo/cli": "^1.0.0",
     "@headlessui/react": "^2.1.2",
     "@pqina/pintura": "^8.83.0",
     "@pqina/react-pintura": "^9.0.3",
