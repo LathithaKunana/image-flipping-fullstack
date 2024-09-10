@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css'
 import {
   FaCamera,
   FaStop,
@@ -8,6 +10,9 @@ import {
   FaDownload,
   FaUpload,
   FaPlay,
+  FaCrop,
+  FaSave,
+  FaRegSave
 } from "react-icons/fa";
 import Sidebar from "./SideBar";
 import FinalSidebar from "./FinalSidebar";
@@ -28,6 +33,9 @@ const CameraApp = () => {
   const trRef = useRef(null);
   const [parentSize, setParentSize] = useState({ width: 0, height: 0 });
   const parentRef = useRef(null);
+  const [crop, setCrop] = useState({ aspect: 16 / 9 });
+  const [isCropping, setIsCropping] = useState(false);
+  const imageRef = useRef(null);
   const [folders, setFolders] = useState({
     "Folder 1": { images: [], thumbnail: null },
     "Folder 2": { images: [], thumbnail: null },
@@ -166,12 +174,64 @@ const CameraApp = () => {
       img.src = reader.result;
       img.onload = () => {
         setOverlayImageElement(img);
+        setIsCropping(true);
       };
     };
 
     if (file) {
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCropComplete = (crop) => {
+    if (imageRef.current && crop.width && crop.height) {
+      const croppedImageUrl = getCroppedImg(
+        imageRef.current,
+        crop,
+        'croppedImage.jpeg'
+      );
+      croppedImageUrl.then((url) => {
+        const img = new window.Image();
+        img.src = url;
+        img.onload = () => {
+          setOverlayImageElement(img);
+          setIsCropping(false);
+        };
+      });
+    }
+  };
+
+  const getCroppedImg = (image, crop, fileName) => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Canvas is empty'));
+          return;
+        }
+        blob.name = fileName;
+        const croppedImageUrl = window.URL.createObjectURL(blob);
+        resolve(croppedImageUrl);
+      }, 'image/jpeg');
+    });
   };
 
   const downloadImage = () => {
@@ -384,6 +444,27 @@ const CameraApp = () => {
                     </Layer>
                   </Stage>
                 )}
+                {isCropping && overlayImageElement && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                          <div className="bg-white p-4 rounded-lg">
+                            <ReactCrop
+                              src={overlayImageElement.src}
+                              crop={crop}
+                              onChange={(newCrop) => setCrop(newCrop)}
+                              onComplete={handleCropComplete}
+                            >
+                              <img ref={imageRef} src={overlayImageElement.src} alt="Overlay" />
+                            </ReactCrop>
+                            <div className="mt-4 flex justify-end">
+                              <Button
+                                label="Apply Crop"
+                                icon={<FaCrop />}
+                                onClick={() => setIsCropping(false)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
               </div>
             </div>
           )}
@@ -392,7 +473,7 @@ const CameraApp = () => {
               {!isOverlaySaved && ( // Only show save button if overlay is not saved yet
                 <Button
                   label="Save"
-                  icon={<FaDownload />}
+                  icon={<FaSave />}
                   onClick={saveOverlay}
                 />
               )}
