@@ -1,8 +1,14 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
-import ReactCrop from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css'
+import {
+  Stage,
+  Layer,
+  Image as KonvaImage,
+  Transformer,
+  Group,
+} from "react-konva";
+import ReactCrop from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import {
   FaCamera,
   FaStop,
@@ -12,7 +18,9 @@ import {
   FaPlay,
   FaCrop,
   FaSave,
-  FaRegSave
+  FaRegSave,
+  FaCheck,
+  FaTimes,
 } from "react-icons/fa";
 import Sidebar from "./SideBar";
 import FinalSidebar from "./FinalSidebar";
@@ -35,6 +43,7 @@ const CameraApp = () => {
   const parentRef = useRef(null);
   const [crop, setCrop] = useState({ aspect: 16 / 9 });
   const [isCropping, setIsCropping] = useState(false);
+  const [originalOverlayImage, setOriginalOverlayImage] = useState(null); // Store the original overlay image
   const imageRef = useRef(null);
   const [folders, setFolders] = useState({
     "Folder 1": { images: [], thumbnail: null },
@@ -166,6 +175,11 @@ const CameraApp = () => {
   };
 
   const handleOverlayUpload = (e) => {
+    if (overlayRef.current) {
+      // Clear existing overlay and transformer if present
+      deleteOverlay();
+    }
+
     const file = e.target.files[0];
     const reader = new FileReader();
 
@@ -174,6 +188,7 @@ const CameraApp = () => {
       img.src = reader.result;
       img.onload = () => {
         setOverlayImageElement(img);
+        setOriginalOverlayImage(img);
         setIsCropping(true);
       };
     };
@@ -183,12 +198,19 @@ const CameraApp = () => {
     }
   };
 
+  const handleEditCrop = () => {
+    if (originalOverlayImage) {
+      setOverlayImageElement(originalOverlayImage); // Reset to the original for re-cropping
+      setIsCropping(true); // Open cropping UI
+    }
+  };
+
   const handleCropComplete = (crop) => {
     if (imageRef.current && crop.width && crop.height) {
       const croppedImageUrl = getCroppedImg(
         imageRef.current,
         crop,
-        'croppedImage.jpeg'
+        "croppedImage.jpeg"
       );
       croppedImageUrl.then((url) => {
         const img = new window.Image();
@@ -201,13 +223,36 @@ const CameraApp = () => {
     }
   };
 
+  const handleCropChange = (newCrop) => {
+    setCrop(newCrop);
+  };
+
+  const handleCropDone = () => {
+    // Trigger cropping only when the "Done" button is pressed
+    if (imageRef.current && crop.width && crop.height) {
+      const croppedImageUrl = getCroppedImg(
+        imageRef.current,
+        crop,
+        "croppedImage.jpeg"
+      );
+      croppedImageUrl.then((url) => {
+        const img = new window.Image();
+        img.src = url;
+        img.onload = () => {
+          setOverlayImageElement(img);
+          setIsCropping(false); // Close cropping UI
+        };
+      });
+    }
+  };
+
   const getCroppedImg = (image, crop, fileName) => {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
     canvas.width = crop.width;
     canvas.height = crop.height;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     ctx.drawImage(
       image,
@@ -224,85 +269,112 @@ const CameraApp = () => {
     return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
         if (!blob) {
-          reject(new Error('Canvas is empty'));
+          reject(new Error("Canvas is empty"));
           return;
         }
         blob.name = fileName;
         const croppedImageUrl = window.URL.createObjectURL(blob);
         resolve(croppedImageUrl);
-      }, 'image/jpeg');
+      }, "image/jpeg");
     });
+  };
+
+  const deleteOverlay = () => {
+    if (overlayRef.current) {
+      setOverlayImageElement(null);
+      setOverlayState(null);
+      setOverlayFinalPosition(null);
+      setIsOverlaySaved(false);
+
+      // Reset the transformer reference
+      if (trRef.current) {
+        trRef.current.nodes([]);
+      }
+      overlayRef.current = null; // Clear overlayRef to allow new uploads
+    }
   };
 
   const downloadImage = () => {
     console.log("Downloading image...");
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
-  
+
     const imgWidth = flippedImageElement.width;
     const imgHeight = flippedImageElement.height;
-  
+
     console.log("Image width:", imgWidth);
     console.log("Image height:", imgHeight);
-  
+
     canvas.width = imgWidth * 2 + 200; // 100px for each sidebar
     canvas.height = imgHeight;
-  
+
     const img1 = new Image();
     img1.crossOrigin = "anonymous";
     img1.src = originalImage;
-  
+
     let thumbnailsLoaded = 0;
     const totalThumbnails = Object.keys(folders).length * 2; // 2 sidebars
-  
+
     img1.onload = () => {
       console.log("Original image loaded");
       context.drawImage(img1, 100, 0, imgWidth, imgHeight); // Left side
-      context.drawImage(flippedImageElement, imgWidth+100 , 0, imgWidth, imgHeight); // Right side
-  
+      context.drawImage(
+        flippedImageElement,
+        imgWidth + 100,
+        0,
+        imgWidth,
+        imgHeight
+      ); // Right side
+
       if (overlayFinalPosition && overlayImageElement) {
         console.log("Drawing overlay...");
         const { position, scaleX, scaleY, rotation } = overlayFinalPosition;
-  
+
         // Calculate the scaling factor between the displayed (Konva) size and the actual image size
-        const scaleFactorX = imgWidth / (parentSize.width);
-        const scaleFactorY = imgHeight / (parentSize.height);
-  
+        const scaleFactorX = imgWidth / parentSize.width;
+        const scaleFactorY = imgHeight / parentSize.height;
+
         // Correct overlay position
-        const scaledX = (position.x * scaleFactorX) + imgWidth+100; // Adjust for right-side placement
+        const scaledX = position.x * scaleFactorX + imgWidth + 100; // Adjust for right-side placement
         const scaledY = position.y * scaleFactorY; // Scale Y position
-  
+
         const scaledWidth = overlayRef.current.width() * scaleX * scaleFactorX;
-        const scaledHeight = overlayRef.current.height() * scaleY * scaleFactorY;
-  
+        const scaledHeight =
+          overlayRef.current.height() * scaleY * scaleFactorY;
+
         // Save the context state before applying transformations
         context.save();
-  
+
         // Move context to the calculated overlay position
         context.translate(scaledX, scaledY);
         context.rotate((rotation * Math.PI) / 180);
-  
+
         // Draw the overlay image at the correct position and size
         context.drawImage(overlayImageElement, 0, 0, scaledWidth, scaledHeight);
-  
+
         // Restore context state after drawing the overlay
         context.restore();
       }
-  
+
       // Function to draw thumbnails on the sidebars
       const drawThumbnails = (side) => {
         return new Promise((resolve) => {
           console.log(`Drawing thumbnails for ${side} sidebar...`);
           const folderCount = Object.keys(folders).length;
-          const maxContainerSize = Math.min(80, (imgHeight - 20) / folderCount - 10);
+          const maxContainerSize = Math.min(
+            80,
+            (imgHeight - 20) / folderCount - 10
+          );
           const containerSize = Math.max(20, maxContainerSize);
-          const ySpacing = (imgHeight - containerSize * folderCount) / (folderCount + 1);
-  
+          const ySpacing =
+            (imgHeight - containerSize * folderCount) / (folderCount + 1);
+
           Object.keys(folders).forEach((folderName, index) => {
-            const thumbnailSrc = side === "left"
-              ? initialThumbnails[folderName]
-              : folders[folderName].thumbnail;
-  
+            const thumbnailSrc =
+              side === "left"
+                ? initialThumbnails[folderName]
+                : folders[folderName].thumbnail;
+
             if (thumbnailSrc) {
               const thumbnailImg = new Image();
               thumbnailImg.crossOrigin = "anonymous";
@@ -311,13 +383,29 @@ const CameraApp = () => {
                 context.save();
                 context.beginPath();
                 const xPosition = side === "left" ? 50 : canvas.width - 50; // Adjust sidebar position
-                const yPosition = ySpacing * (index + 1) + containerSize * index + containerSize / 2;
-                context.arc(xPosition, yPosition, containerSize / 2, 0, Math.PI * 2, true);
+                const yPosition =
+                  ySpacing * (index + 1) +
+                  containerSize * index +
+                  containerSize / 2;
+                context.arc(
+                  xPosition,
+                  yPosition,
+                  containerSize / 2,
+                  0,
+                  Math.PI * 2,
+                  true
+                );
                 context.clip();
                 const imgXPosition = side === "left" ? 0 : canvas.width - 100;
-                context.drawImage(thumbnailImg, imgXPosition, yPosition - containerSize / 2, containerSize, containerSize);
+                context.drawImage(
+                  thumbnailImg,
+                  imgXPosition,
+                  yPosition - containerSize / 2,
+                  containerSize,
+                  containerSize
+                );
                 context.restore();
-  
+
                 if (index === folderCount - 1) resolve(); // Resolve the promise after last thumbnail
               };
             } else if (index === folderCount - 1) {
@@ -326,17 +414,19 @@ const CameraApp = () => {
           });
         });
       };
-  
+
       // Draw thumbnails on both sidebars
-      Promise.all([drawThumbnails("left"), drawThumbnails("right")]).then(() => {
-        console.log("Thumbnails drawn");
-        const combinedImage = canvas.toDataURL("image/png");
-        const link = document.createElement("a");
-        link.href = combinedImage;
-        link.download = "final_image.png";
-        link.click();
-        console.log("Image downloaded");
-      });
+      Promise.all([drawThumbnails("left"), drawThumbnails("right")]).then(
+        () => {
+          console.log("Thumbnails drawn");
+          const combinedImage = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = combinedImage;
+          link.download = "final_image.png";
+          link.click();
+          console.log("Image downloaded");
+        }
+      );
     };
   };
 
@@ -418,7 +508,7 @@ const CameraApp = () => {
               />
               <div
                 ref={parentRef}
-                className="w-full h-96 md:w-1/2 rounded-lg shadow-lg overflow-hidden"
+                className="w-full h-96 md:w-1/2 rounded-lg shadow-lg overflow-hidden relative"
               >
                 {parentSize.width && parentSize.height && (
                   <Stage
@@ -433,49 +523,107 @@ const CameraApp = () => {
                         height={parentSize.height}
                       />
                       {overlayImageElement && (
-                        <KonvaImage
-                          ref={overlayRef}
-                          image={overlayImageElement}
-                          draggable
-                          onTransformEnd={handleOverlayTransform}
-                        />
+                        <>
+                          <KonvaImage
+                            ref={overlayRef}
+                            image={overlayImageElement}
+                            draggable={!isOverlaySaved}
+                            onTransformEnd={handleOverlayTransform}
+                          />
+                          {!isOverlaySaved && (
+                            <>
+                              <KonvaImage
+                                x={
+                                  overlayRef.current?.x() +
+                                  (overlayRef.current?.width() || 0) -
+                                  40
+                                } // Position edit icon near the delete icon
+                                y={overlayRef.current?.y() + 20}
+                                width={20}
+                                height={20}
+                                onClick={handleEditCrop} // Trigger the edit crop function
+                                onTap={handleEditCrop}
+                                image={(() => {
+                                  const editIcon = new window.Image();
+                                  editIcon.src =
+                                    "data:image/svg+xml," +
+                                    encodeURIComponent(
+                                      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="blue">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>`
+                                    );
+                                  return editIcon;
+                                })()}
+                              />
+                              <KonvaImage
+                                x={
+                                  overlayRef.current?.x() +
+                                  (overlayRef.current?.width() || 0) -
+                                  20
+                                }
+                                y={overlayRef.current?.y()}
+                                width={20}
+                                height={20}
+                                onClick={deleteOverlay}
+                                onTap={deleteOverlay}
+                                image={(() => {
+                                  const deleteIcon = new window.Image();
+                                  deleteIcon.src =
+                                    "data:image/svg+xml," +
+                                    encodeURIComponent(
+                                      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              </svg>`
+                                    );
+                                  return deleteIcon;
+                                })()}
+                              />
+                            </>
+                          )}
+                        </>
                       )}
                       <Transformer ref={trRef} rotateEnabled resizeEnabled />
                     </Layer>
                   </Stage>
                 )}
                 {isCropping && overlayImageElement && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                          <div className="bg-white p-4 rounded-lg">
-                            <ReactCrop
-                              src={overlayImageElement.src}
-                              crop={crop}
-                              onChange={(newCrop) => setCrop(newCrop)}
-                              onComplete={handleCropComplete}
-                            >
-                              <img ref={imageRef} src={overlayImageElement.src} alt="Overlay" />
-                            </ReactCrop>
-                            <div className="mt-4 flex justify-end">
-                              <Button
-                                label="Apply Crop"
-                                icon={<FaCrop />}
-                                onClick={() => setIsCropping(false)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-4 rounded-lg">
+                      <ReactCrop
+                        src={overlayImageElement.src}
+                        crop={crop}
+                        onChange={handleCropChange}
+                      >
+                        <img
+                          ref={imageRef}
+                          src={overlayImageElement.src}
+                          alt="Overlay"
+                        />
+                      </ReactCrop>
+                      <div className="mt-4 flex justify-end space-x-2">
+                        {/* Add a "Done" button to confirm crop */}
+                        <Button
+                          label="Done"
+                          icon={<FaCheck />}
+                          onClick={handleCropDone}
+                        />
+                        {/* Optional: Add a "Cancel" button to discard changes */}
+                        <Button
+                          label="Cancel"
+                          icon={<FaTimes />}
+                          onClick={() => setIsCropping(false)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
           {showEditor && (
             <div className="flex flex-wrap justify-center gap-2 mt-4">
               {!isOverlaySaved && ( // Only show save button if overlay is not saved yet
-                <Button
-                  label="Save"
-                  icon={<FaSave />}
-                  onClick={saveOverlay}
-                />
+                <Button label="Save" icon={<FaSave />} onClick={saveOverlay} />
               )}
               <Button
                 label="Download"
