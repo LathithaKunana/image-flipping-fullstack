@@ -458,7 +458,7 @@ const CameraApp = () => {
   }, [showEditor, overlayImageElement, flippedImageElement]);
 
   return (
-    <div className="flex flex-col px-14 sm:px-20 sm:flex-row min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200">
+    <div className="flex flex-col px-14 sm:px-20 sm:flex-row min-h-screen bg-gray-200">
       <Sidebar
         folders={folders}
         setFolders={setFolders}
@@ -632,7 +632,7 @@ const CameraApp = () => {
               />
               <label
                 htmlFor="overlay-upload"
-                className="bg-indigo-500 text-white font-bold py-2 px-4 rounded inline-flex items-center cursor-pointer"
+                className="bg-fuchsia-600 text-white font-bold py-2 px-4 rounded inline-flex items-center cursor-pointer"
               >
                 <FaUpload className="mr-2" />
                 <span className="hidden sm:inline">Upload Overlay</span>
@@ -657,7 +657,7 @@ const CameraApp = () => {
 const Button = ({ label, icon, onClick }) => (
   <motion.button
     onClick={onClick}
-    className="flex items-center bg-indigo-500 text-white font-bold py-2 px-4 rounded hover:bg-indigo-600 transition-colors duration-200 ease-in-out shadow-lg"
+    className="flex items-center bg-fuchsia-600 text-white font-bold py-2 px-4 rounded hover:bg-fuchsia-900 transition-colors duration-200 ease-in-out shadow-lg"
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
   >
